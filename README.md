@@ -32,7 +32,9 @@ npm run dev               # http://localhost:5173
 ```
 
 ### 3. Deploy on GitHub Pages (set up)
-Every push to `main` builds and deploys via `.github/workflows/pages.yml`. Repo → Settings → Pages → Source: **GitHub Actions**. For live mode add the two Supabase values as repo secrets (Settings → Secrets and variables → Actions) and add `https://jkrocks.github.io/ourstory/` to Supabase Redirect URLs.
+Every push to `main` builds the site and publishes it to the `gh-pages` branch (`.github/workflows/pages.yml`).
+One-time: repo → Settings → Pages → Source **Deploy from a branch**, Branch **gh-pages** / **(root)** → Save.
+For live mode add the two Supabase values as repo secrets (Settings → Secrets and variables → Actions → New repository secret), push any change, and add `https://jkrocks.github.io/ourstory/` to Supabase Redirect URLs.
 
 ### Or deploy on Vercel
 1. Push this folder to a GitHub repo.
