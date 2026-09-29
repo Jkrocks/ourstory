@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Layout concept: a pinboard on soft grey paper. Memories are tilted polaroids with handwritten dates,
+   held by glossy purple push-pins and joined by purple string; washi tape, ink doodles and margin
+   notes do the decorating. Colour per kind of memory stays in small tags only. */
+:root {
+  --paper: 255 255 255;   /* white page */
+  --card: 248 248 247;    /* surfaces */
+  --ink: 30 29 27;        /* ink */
+  --muted: 104 102 98;    /* pencil */
+  --line: 228 227 224;    /* hairlines */
+  --sand: 240 239 236;    /* empty photo, soft fills */
+  --peach: 240 108 78;    /* coral */
+  --sage: 13 133 133;     /* peacock teal */
+  --honey: 244 166 0;     /* marigold */
+  --heart: 201 46 104;    /* rani pink: favourite + likes */
+  --indigo: 64 76 172;
+  --leaf: 40 128 64;
+  --lilac: 142 96 204;
+  --sky: 24 120 190;
+  --string: 104 76 196;   /* purple string + pins: primary accent */
+  --string-dark: 60 38 130;
+  --tape: 168 178 128;    /* sage washi tape */
+  --frame: 255 255 255;   /* polaroid border, stays white in dark mode */
+  --frame-ink: 42 41 38;
+  --hi: 0;
+  --shadow: 40 36 30;
+  --grain: 0;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: 30 30 32; --card: 42 42 45; --ink: 238 237 233; --muted: 170 168 162;
+    --line: 70 70 74; --sand: 58 58 62; --peach: 255 132 104; --sage: 64 196 190;
+    --honey: 255 190 50; --heart: 250 102 150; --indigo: 138 150 250; --leaf: 104 204 128;
+    --lilac: 186 146 246; --sky: 100 186 250; --string: 160 134 255; --string-dark: 92 66 190;
+    --tape: 150 160 112; --frame: 240 239 235; --shadow: 0 0 0; --grain: 0; --hi: .03;
+    --on-dark: 27 23 30;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: 30 30 32; --card: 42 42 45; --ink: 238 237 233; --muted: 170 168 162;
+  --line: 70 70 74; --sand: 58 58 62; --peach: 255 132 104; --sage: 64 196 190;
+  --honey: 255 190 50; --heart: 250 102 150; --indigo: 138 150 250; --leaf: 104 204 128;
+  --lilac: 186 146 246; --sky: 100 186 250; --string: 160 134 255; --string-dark: 92 66 190;
+  --tape: 150 160 112; --frame: 240 239 235; --shadow: 0 0 0; --grain: 0; --hi: .03;
+  --on-dark: 27 23 30;
+  color-scheme: dark;
+}
+
+.polaroid {
+  background: rgb(var(--frame));
+  padding: 10px 10px 12px;
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgb(var(--shadow) / .12), 0 10px 22px -8px rgb(var(--shadow) / .35);
+}
+.paper-bg {
+  background-color: rgb(var(--paper));
+  background-image:
+    radial-gradient(ellipse 60% 40% at 15% 10%, rgb(255 255 255 / var(--hi)), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 60%, rgb(0 0 0 / var(--lo, 0)), transparent 70%),
+    radial-gradient(ellipse 40% 30% at 30% 90%, rgb(255 255 255 / var(--hi)), transparent 70%);
+  background-attachment: fixed;
+}
+
+/* per-memory colour: set --tone on an element, use rgb(var(--tone)) */
+:root { --on-light: 35 32 28; --on-dark: 255 255 255; }
+.tone-pink { --tone: var(--heart); }
+.tone-marigold { --tone: var(--honey); }
+.tone-teal { --tone: var(--sage); }
+.tone-indigo { --tone: var(--indigo); }
+.tone-leaf { --tone: var(--leaf); }
+.tone-coral { --tone: var(--peach); }
+.tone-lilac { --tone: var(--lilac); }
+.tone-sky { --tone: var(--sky); }
+.bg-tone { background-color: rgb(var(--tone)); color: rgb(var(--on-tone, var(--on-dark))); }
+.tone-marigold, .tone-coral { --on-tone: var(--on-light); }
+.bg-tone-soft { background-color: rgb(var(--tone) / .14); }
+.text-tone { color: rgb(var(--tone)); }
+.border-tone { border-color: rgb(var(--tone)); }
+
+html, body { background: rgb(var(--paper)); color: rgb(var(--ink)); }
+body {
+  font-family: 'Zen Kaku Gothic New', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  letter-spacing: .01em;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+h1, h2, h3 { text-wrap: balance; }
+.tnum { font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: .75rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; color: rgb(var(--muted)); }
+
+/* paper texture on the page */
+
+
+/* a printed photograph: white border, tiny bottom lip */
+.print {
+  background: rgb(var(--card));
+  padding: 6px 6px 8px;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgb(var(--shadow) / .06), 0 8px 20px -12px rgb(var(--shadow) / .2);
+}
+.tape::before {
+  content: ""; position: absolute; top: -9px; left: 50%; width: 64px; height: 18px;
+  transform: translateX(-50%) rotate(-3deg);
+  background: rgb(var(--honey) / .6); border-radius: 2px;
+  box-shadow: 0 1px 1px rgb(var(--shadow) / .08);
+}
+
+:focus-visible { outline: 3px solid rgb(var(--sage)); outline-offset: 2px; border-radius: 10px; }
+button { -webkit-tap-highlight-color: transparent; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+@keyframes rise { from { opacity: .001; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pop { 0% { transform: scale(1); } 35% { transform: scale(1.35); } 70% { transform: scale(.92); } 100% { transform: scale(1); } }
+@keyframes sheet { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes kenburns { from { transform: scale(1.02) translate(0,0); } to { transform: scale(1.14) translate(-2%, -2%); } }
+@keyframes toast { 0% { transform: translate(-50%, 16px); opacity: 0; } 12%, 85% { transform: translate(-50%, 0); opacity: 1; } 100% { transform: translate(-50%, 8px); opacity: 0; } }
+@keyframes progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+.anim-rise { animation: rise .55s cubic-bezier(.2,.7,.2,1) both; }
+.anim-fade { animation: fadein .4s ease both; }
+.anim-pop { animation: pop .45s ease; }
+.anim-sheet { animation: sheet .32s cubic-bezier(.2,.8,.2,1) both; }
+.kenburns { animation: kenburns 9s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+:root { --topbar: 64px; }
+@media (min-width: 1024px) { :root { --topbar: 128px; } }
