@@ -6,6 +6,10 @@ React + TypeScript + Tailwind (Vite). Supabase for sign-in, the album database a
 
 **Live:** https://jkrocks.github.io/ourstory/
 
+- Family sign in with an email link. The first person creates the family album and becomes the owner.
+- Owner: Settings → **Public timeline link** → switch on → Copy. Anyone with that link sees the timeline read-only; switch it off or make a new link at any time.
+- Database: Supabase project "homeflow" (tables and bucket prefixed `os_` / `os-media`, so the two apps never touch). Schema in `supabase/schema.sql`.
+
 ## Two modes
 
 | Mode | When | Where data lives |

@@ -1,4 +1,5 @@
 import { useStore, type Route } from './lib/store';
+import { useAuth } from './lib/auth';
 import { Icon, Toast } from './components/ui';
 import { AddRoot } from './components/AddMemory';
 import { MemoryView } from './components/MemoryView';
@@ -32,7 +33,8 @@ function Wordmark({ small = false }: { small?: boolean }) {
 }
 
 export default function App() {
-  const { route, go, openAdd, setSearch, ready, canEdit, published, dirty, publish, publishing } = useStore();
+  const { route, go, openAdd, setSearch, ready, canEdit, published, dirty, publish, publishing, missing, state } = useStore();
+  const auth = useAuth();
   const screen = {
     home: <Home />, timeline: <Timeline />, memories: <Memories />, people: <People />,
     places: <Places />, favorites: <Favorites />, settings: <Settings />,
@@ -86,7 +88,20 @@ export default function App() {
 
       <main id="main" className="px-4 pb-32 sm:px-6 lg:px-10 lg:pb-16">
         <div key={route.name + JSON.stringify(route)} className="anim-fade mx-auto max-w-[1180px]">
-          {ready ? screen : null}
+          {auth.mode === 'public' && ready && !missing && (
+            <div className="mb-2 mt-4 flex flex-wrap items-center gap-3 rounded-[18px] bg-sand px-4 py-3 text-[15px]">
+              <span className="h-2.5 w-2.5 rounded-full bg-string" aria-hidden />
+              <span>You’re viewing <b>the {state.family.name} family’s</b> story. Read-only.</span>
+              <a href={import.meta.env.BASE_URL} className="ml-auto font-bold underline underline-offset-4">Family sign in</a>
+            </div>
+          )}
+          {missing ? (
+            <div className="mx-auto max-w-md py-24 text-center">
+              <p className="font-display text-[30px] uppercase leading-tight">This story is private</p>
+              <p className="mt-3 text-muted">The link was switched off or replaced by the family. Ask them for the new link.</p>
+              <a href={import.meta.env.BASE_URL} className="mt-6 inline-flex min-h-[48px] items-center rounded-full bg-ink px-6 font-bold text-paper">Go to OurStory</a>
+            </div>
+          ) : ready ? screen : null}
         </div>
       </main>
 

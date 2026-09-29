@@ -4,7 +4,7 @@ import { demoState, emptyState } from './demo';
 import { loadState, saveState, getMediaUrl, loadDraft, saveDraft } from './storage';
 import { canEditPage, pageBytes, publishPage, readEmbedded, LIMIT_BYTES } from './published';
 import { removeMedia } from './media';
-import { loadAlbum, saveAlbum, watchAlbum } from './cloud';
+import { loadAlbum, loadPublicAlbum, saveAlbum, watchAlbum } from './cloud';
 import { useAuth } from './auth';
 
 type Action =
@@ -111,6 +111,8 @@ interface Ctx extends UI {
   /** false for visitors of the published page */
   canEdit: boolean;
   published: boolean;
+  /** a public link was opened but the album is private or the link was replaced */
+  missing: boolean;
   /** owner has changes visitors can't see yet */
   dirty: boolean;
   publish: () => Promise<void>;
@@ -126,13 +128,15 @@ const ROUTES = ['home', 'timeline', 'memories', 'people', 'places', 'favorites',
 export function StoreProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const cloud = auth.mode === 'cloud';
-  const published = auth.mode === 'published';
-  const embedded = useMemo(() => (published ? readEmbedded() : null), [published]);
+  const isPublicView = auth.mode === 'public';
+  const published = auth.mode === 'published' || isPublicView;
+  const embedded = useMemo(() => (auth.mode === 'published' ? readEmbedded() : null), [auth.mode]);
   const [state, dispatch] = useReducer(reducer, undefined, () =>
-    published ? embedded?.state ?? demoState() : cloud || auth.seed === 'fresh' ? emptyState(auth.family?.name ?? '') : demoState());
+    isPublicView ? emptyState('') : published ? embedded?.state ?? demoState() : cloud || auth.seed === 'fresh' ? emptyState(auth.family?.name ?? '') : demoState());
   const [canEdit, setCanEdit] = useState(!published);
   const [dirty, setDirty] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [missing, setMissing] = useState(false);
   const [ready, setReady] = useState(false);
   const initial = (() => {
     try {
@@ -157,6 +161,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let live = true;
     const done = (st: AppState) => { if (!live) return; const themed = withTheme(st); saved.current = themed; dispatch({ t: 'replace', s: themed }); setReady(true); };
+    if (isPublicView) {
+      setCanEdit(false);
+      loadPublicAlbum(auth.shareSlug!).then((st) => {
+        if (!live) return;
+        if (st) done(st);
+        else { setMissing(true); setReady(true); }
+      });
+      return () => { live = false; };
+    }
     if (published) {
       done(embedded?.state ?? demoState());
       canEditPage().then(async (can) => {
@@ -192,6 +205,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // save
   useEffect(() => {
     if (!ready || !saved.current || state === saved.current) return;
+    if (isPublicView) return;
     if (published) {
       if (!canEdit) return;
       const t = setTimeout(() => { saveDraft({ state, stamp: Date.now() }); setDirty(true); }, 300);
@@ -229,7 +243,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const toast = useCallback((msg: string) => setToast({ id: Date.now(), msg }), []);
 
-  const bytes = useMemo(() => (published ? pageBytes(state) : 0), [published, state]);
+  const bytes = useMemo(() => (auth.mode === 'published' ? pageBytes(state) : 0), [auth.mode, state]);
   const publish = useCallback(async () => {
     if (bytes > LIMIT_BYTES) { toast('The album is too big to publish. Remove a few photos first.'); return; }
     setPublishing(true);
@@ -246,13 +260,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<Ctx>(
     () => ({
-      state, dispatch, ready, route, go, canEdit, published, dirty, publish, publishing, bytes, limit: LIMIT_BYTES,
+      state, dispatch, ready, route, go, canEdit, published, missing, dirty, publish, publishing, bytes, limit: LIMIT_BYTES,
       memoryId, openMemory: setMemoryId,
       viewer, openViewer: setViewer,
       add, openAdd: setAdd,
       toast, toastMsg, search, setSearch, recap, setRecap, share, setShare,
     }),
-    [state, ready, route, go, canEdit, published, dirty, publish, publishing, bytes, memoryId, viewer, add, toast, toastMsg, search, recap, share],
+    [state, ready, route, go, canEdit, published, missing, dirty, publish, publishing, bytes, memoryId, viewer, add, toast, toastMsg, search, recap, share],
   );
   return <C.Provider value={value}>{children}</C.Provider>;
 }

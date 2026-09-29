@@ -94,12 +94,18 @@ export function Login() {
             </div>
           ) : (
             <>
-              <Btn className="w-full min-h-[56px] text-[17px]" onClick={() => run(auth.signInGoogle)} disabled={busy}>Continue with Google</Btn>
-              <div className="flex items-center gap-3 text-[14px] text-muted"><span className="h-px flex-1 bg-line" />or with your email<span className="h-px flex-1 bg-line" /></div>
+              {import.meta.env.VITE_GOOGLE === '1' && (
+                <>
+                  <Btn className="w-full min-h-[56px] text-[17px]" onClick={() => run(auth.signInGoogle)} disabled={busy}>Continue with Google</Btn>
+                  <div className="flex items-center gap-3 text-[14px] text-muted"><span className="h-px flex-1 bg-line" />or with your email<span className="h-px flex-1 bg-line" /></div>
+                </>
+              )}
+              <p className="font-bold">Sign in with your email</p>
+              <p className="-mt-2 text-[14px] text-muted">We’ll email you a link. No password needed.</p>
               <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (email.includes('@')) run(async () => { await auth.signInEmail(email.trim()); setSent(true); }); }}>
                 <label htmlFor="l-email" className="sr-only">Email</label>
                 <input id="l-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@family.com" className={field} />
-                <Btn type="submit" variant="soft" className="w-full" disabled={busy}>Email me a sign-in link</Btn>
+                <Btn type="submit" className="w-full" disabled={busy}>{busy ? 'Sending…' : 'Email me a sign-in link'}</Btn>
               </form>
             </>
           )}

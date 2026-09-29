@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth';
-import { familyMembers, newInviteCode } from '../lib/cloud';
+import { familyMembers, newInviteCode, setPublicLink, shareUrl } from '../lib/cloud';
 import { useStore } from '../lib/store';
 import type { Memory, Privacy, Theme } from '../lib/types';
 import { byDateDesc, coverOf, fmtDate, parts, stats, toneAt, uid, yearsTogether } from '../lib/utils';
@@ -275,6 +275,7 @@ function AccountBlock() {
   }
 
   const [code, setCode] = useState(auth.family?.invite_code ?? '');
+  const isOwner = members.some((x) => x.user_id === auth.user?.id && x.role === 'owner');
   const invite = `Join our family album on OurStory: ${(location.origin + import.meta.env.BASE_URL)}  Sign in, choose “Join with a code” and enter ${code.toUpperCase()}`;
   const copy = () => {
     try { navigator.clipboard.writeText(invite).then(() => toast('Invite copied. Send it on WhatsApp or email.'), () => toast('Select the code and copy it')); }
@@ -289,7 +290,7 @@ function AccountBlock() {
             <p className="select-all font-display text-[34px] leading-none tracking-[.12em] tnum">{code.toUpperCase()}</p>
           </div>
           <Btn className="ml-auto" onClick={copy}><Icon name="share" size={18} /> Copy invite</Btn>
-          {members.some((x) => x.user_id === auth.user?.id && x.role === 'owner') && (
+          {isOwner && (
             <button className="min-h-[44px] text-[14px] font-bold text-muted underline underline-offset-4" onClick={async () => {
               try { const c = await newInviteCode(); setCode(c); toast('New code made. The old one no longer works.'); }
               catch { toast('Couldn’t change the code. Try again.'); }
@@ -307,6 +308,7 @@ function AccountBlock() {
           </ul>
         )}
       </SettingBlock>
+      {isOwner && <PublicLinkBlock />}
       <SettingBlock title="Account" sub={`Signed in as ${auth.user?.email ?? auth.user?.name}.`}>
         <Btn variant="soft" onClick={() => auth.signOut()}>Sign out</Btn>
       </SettingBlock>
@@ -348,6 +350,46 @@ function PublishBlock() {
             }}>Remove</Btn>
           </div>
         )
+      )}
+    </SettingBlock>
+  );
+}
+
+function PublicLinkBlock() {
+  const auth = useAuth();
+  const { toast } = useStore();
+  const [on, setOn] = useState(!!auth.family?.public_enabled);
+  const [slug, setSlug] = useState(auth.family?.public_slug ?? '');
+  const [busy, setBusy] = useState(false);
+  const url = slug ? shareUrl(slug) : '';
+  const run = async (next: boolean, fresh = false) => {
+    setBusy(true);
+    try {
+      const s = await setPublicLink(next, fresh);
+      setSlug(s); setOn(next);
+      toast(fresh ? 'New link made. The old one no longer works.' : next ? 'Public link is on. Anyone with it can view your timeline.' : 'Public link is off.');
+    } catch { toast('Couldn’t change the link. Try again.'); }
+    setBusy(false);
+  };
+  const copy = () => {
+    try { navigator.clipboard.writeText(url).then(() => toast('Link copied'), () => toast('Select the link and copy it')); }
+    catch { toast('Select the link and copy it'); }
+  };
+  return (
+    <SettingBlock title="Public timeline link" sub="Share your timeline with anyone, no sign-in needed. They can look, not change anything. Turn it off any time.">
+      <label className="flex min-h-[56px] cursor-pointer items-center justify-between gap-4 rounded-[16px] border border-line px-4">
+        <span><span className="block font-semibold">{on ? 'Link is on' : 'Link is off'}</span><span className="block text-[14px] text-muted">{on ? 'Anyone with the link can view' : 'Only signed-in family can view'}</span></span>
+        <input id="pub-on" type="checkbox" disabled={busy} checked={on} onChange={(e) => run(e.target.checked)} className="h-6 w-6 accent-[rgb(var(--string))]" />
+      </label>
+      {on && (
+        <>
+          <div className="flex gap-2">
+            <label htmlFor="pub-url" className="sr-only">Public link</label>
+            <input id="pub-url" readOnly value={url} onFocus={(e) => e.target.select()} className="min-h-[48px] min-w-0 flex-1 rounded-full border border-line bg-card px-4 text-[14px] text-muted" />
+            <Btn onClick={copy}><Icon name="link" size={18} /> Copy</Btn>
+          </div>
+          <button disabled={busy} onClick={() => run(true, true)} className="min-h-[40px] text-[14px] font-bold text-muted underline underline-offset-4">Make a new link (old one stops working)</button>
+        </>
       )}
     </SettingBlock>
   );

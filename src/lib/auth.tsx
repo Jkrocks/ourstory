@@ -8,7 +8,9 @@ export type Phase = 'loading' | 'signedOut' | 'noFamily' | 'ready';
 type PreviewSeed = 'demo' | 'fresh';
 
 interface Auth {
-  mode: 'cloud' | 'preview' | 'published';
+  mode: 'cloud' | 'preview' | 'published' | 'public';
+  /** set when someone opens a public timeline link */
+  shareSlug: string | null;
   phase: Phase;
   user: { id: string; email?: string; name: string } | null;
   family: FamilyRow | null;
@@ -30,7 +32,10 @@ const writeLS = (k: string, v: string | null) => { try { v == null ? localStorag
 const nameOf = (u: User) => (u.user_metadata?.full_name as string) || (u.user_metadata?.name as string) || u.email?.split('@')[0] || 'Me';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const mode: Auth['mode'] = isPublishedBuild ? 'published' : cloudEnabled ? 'cloud' : 'preview';
+  const shareSlug = useMemo(() => {
+    try { const s = new URLSearchParams(location.search).get('share'); return s && /^[a-z0-9]{6,40}$/.test(s) ? s : null; } catch { return null; }
+  }, []);
+  const mode: Auth['mode'] = isPublishedBuild ? 'published' : cloudEnabled ? (shareSlug ? 'public' : 'cloud') : 'preview';
   const [phase, setPhase] = useState<Phase>('loading');
   const [user, setUser] = useState<Auth['user']>(null);
   const [family, setFamily] = useState<FamilyRow | null>(null);
@@ -46,6 +51,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (mode === 'public') {
+      setMediaMode('cloud');
+      setUser({ id: 'visitor', name: 'Visitor' });
+      setPhase('ready');
+      return;
+    }
     if (mode === 'published') {
       setMediaMode('inline');
       setUser({ id: 'viewer', name: 'Family' });
@@ -74,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [mode, pickFamily]);
 
   const value = useMemo<Auth>(() => ({
-    mode, phase, user, family, seed,
+    mode, shareSlug, phase, user, family, seed,
     signInGoogle: async () => {
       const { error } = await supabase!.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: (location.origin + import.meta.env.BASE_URL) } });
       if (error) throw error;
@@ -106,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser({ id: 'preview', name: name || readLS('ourstory-name') || 'You' });
       setPhase('ready');
     },
-  }), [mode, phase, user, family, seed, pickFamily]);
+  }), [mode, shareSlug, phase, user, family, seed, pickFamily]);
 
   return <A.Provider value={value}>{children}</A.Provider>;
 }
