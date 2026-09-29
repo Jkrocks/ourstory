@@ -49,6 +49,12 @@ export async function joinFamily(code: string, displayName: string): Promise<str
   return data as string;
 }
 
+export async function newInviteCode(): Promise<string> {
+  const { data, error } = await sb().rpc('new_invite_code', { p_family: familyId });
+  if (error) throw error;
+  return data as string;
+}
+
 export async function familyMembers(): Promise<{ user_id: string; display_name: string | null; role: string }[]> {
   if (!familyId) return [];
   const { data } = await sb().from('family_members').select('user_id, display_name, role').eq('family_id', familyId);

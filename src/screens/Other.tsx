@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth';
-import { familyMembers } from '../lib/cloud';
+import { familyMembers, newInviteCode } from '../lib/cloud';
 import { useStore } from '../lib/store';
 import type { Memory, Privacy, Theme } from '../lib/types';
 import { byDateDesc, coverOf, fmtDate, parts, stats, toneAt, uid, yearsTogether } from '../lib/utils';
@@ -274,7 +274,7 @@ function AccountBlock() {
     );
   }
 
-  const code = auth.family?.invite_code ?? '';
+  const [code, setCode] = useState(auth.family?.invite_code ?? '');
   const invite = `Join our family album on OurStory: ${(location.origin + import.meta.env.BASE_URL)}  Sign in, choose “Join with a code” and enter ${code.toUpperCase()}`;
   const copy = () => {
     try { navigator.clipboard.writeText(invite).then(() => toast('Invite copied. Send it on WhatsApp or email.'), () => toast('Select the code and copy it')); }
@@ -289,6 +289,12 @@ function AccountBlock() {
             <p className="select-all font-display text-[34px] leading-none tracking-[.12em] tnum">{code.toUpperCase()}</p>
           </div>
           <Btn className="ml-auto" onClick={copy}><Icon name="share" size={18} /> Copy invite</Btn>
+          {members.some((x) => x.user_id === auth.user?.id && x.role === 'owner') && (
+            <button className="min-h-[44px] text-[14px] font-bold text-muted underline underline-offset-4" onClick={async () => {
+              try { const c = await newInviteCode(); setCode(c); toast('New code made. The old one no longer works.'); }
+              catch { toast('Couldn’t change the code. Try again.'); }
+            }}>New code</button>
+          )}
         </div>
         {members.length > 0 && (
           <ul className="flex flex-wrap gap-2 pt-1">
