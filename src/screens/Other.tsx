@@ -10,6 +10,31 @@ import { Avatar, Btn, Empty, Icon, Img } from '../components/ui';
 import { MemoryCard } from '../components/MemoryCard';
 import { Masonry } from './Memories';
 
+/* ---------------- Drive album ---------------- */
+// The family's shared Google Drive folder, shown as it is. Needs "Anyone with the link" sharing.
+export const DRIVE_FOLDER = ((import.meta.env.VITE_DRIVE_FOLDER as string | undefined) ?? '').trim();
+
+export function DriveAlbum() {
+  if (!DRIVE_FOLDER) return <Empty title="No Drive folder yet" body="A shared Google Drive folder will show here once it is connected." action={false} />;
+  const open = `https://drive.google.com/drive/folders/${DRIVE_FOLDER}`;
+  return (
+    <div className="pb-10 pt-4 sm:pt-8">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="eyebrow">Google Drive</p>
+          <h1 className="font-display text-[40px] leading-tight">Drive album</h1>
+          <p className="text-muted">Everything in the family folder. Drop new photos into the folder and they appear here.</p>
+        </div>
+        <a href={open} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-line bg-card px-5 font-semibold hover:bg-sand"><Icon name="folder" size={20} /> Open in Drive</a>
+      </div>
+      <div className="overflow-hidden rounded-[20px] border border-line bg-white shadow-print">
+        <iframe title="Family Google Drive folder" src={`https://drive.google.com/embeddedfolderview?id=${DRIVE_FOLDER}#grid`} loading="lazy" referrerPolicy="no-referrer" className="block h-[78vh] min-h-[480px] w-full" />
+      </div>
+      <p className="mt-3 text-[14px] text-muted">Empty or asking to sign in? Set the folder to “Anyone with the link · Viewer” in Google Drive.</p>
+    </div>
+  );
+}
+
 /* ---------------- Places ---------------- */
 export function Places() {
   const { state, route, go } = useStore();
@@ -177,8 +202,8 @@ export function Settings() {
       </section>
 
       {/* mobile shortcuts */}
-      <nav aria-label="More" className="mb-14 grid grid-cols-3 gap-3 lg:hidden">
-        {([['people', 'people', 'People'], ['places', 'place', 'Places'], ['favorites', 'star', 'Favourites']] as const).map(([r, ic, l]) => (
+      <nav aria-label="More" className={`mb-14 grid gap-3 lg:hidden ${DRIVE_FOLDER ? 'grid-cols-2' : 'grid-cols-3'}`}>
+        {([['people', 'people', 'People'], ['places', 'place', 'Places'], ['favorites', 'star', 'Favourites'], ...(DRIVE_FOLDER ? [['album', 'folder', 'Drive album']] as const : [])] as const).map(([r, ic, l]) => (
           <button key={r} onClick={() => go({ name: r })} className="flex min-h-[88px] flex-col items-center justify-center gap-2 rounded-[20px] bg-card font-semibold shadow-print"><Icon name={ic} />{l}</button>
         ))}
       </nav>

@@ -9,7 +9,7 @@ import { Home } from './screens/Home';
 import { Timeline } from './screens/Timeline';
 import { Memories } from './screens/Memories';
 import { People } from './screens/People';
-import { Favorites, Places, Settings } from './screens/Other';
+import { DriveAlbum, Favorites, Places, Settings, DRIVE_FOLDER } from './screens/Other';
 
 const NAV: { r: Route['name']; label: string; icon: string }[] = [
   { r: 'home', label: 'Home', icon: 'home' },
@@ -18,6 +18,7 @@ const NAV: { r: Route['name']; label: string; icon: string }[] = [
   { r: 'people', label: 'People', icon: 'people' },
   { r: 'places', label: 'Places', icon: 'place' },
   { r: 'favorites', label: 'Favourites', icon: 'star' },
+  ...(DRIVE_FOLDER ? [{ r: 'album' as const, label: 'Drive album', icon: 'folder' }] : []),
   { r: 'settings', label: 'Settings', icon: 'settings' },
 ];
 
@@ -35,7 +36,7 @@ export default function App() {
   const auth = useAuth();
   const screen = {
     home: <Home />, timeline: <Timeline />, memories: <Memories />, people: <People />,
-    places: <Places />, favorites: <Favorites />, settings: <Settings />,
+    places: <Places />, favorites: <Favorites />, album: <DriveAlbum />, settings: <Settings />,
   }[route.name];
 
   return (
@@ -133,7 +134,7 @@ export default function App() {
                 </button>
               ) : (
                 <button onClick={() => go({ name: r } as Route)} aria-current={route.name === r ? 'page' : undefined}
-                  className={`flex min-h-[56px] min-w-[64px] flex-col items-center justify-center gap-0.5 text-[12px] font-semibold ${route.name === r || (r === 'settings' && ['people', 'places', 'favorites'].includes(route.name)) ? 'text-string' : 'text-muted'}`}>
+                  className={`flex min-h-[56px] min-w-[64px] flex-col items-center justify-center gap-0.5 text-[12px] font-semibold ${route.name === r || (r === 'settings' && ['people', 'places', 'favorites', 'album'].includes(route.name)) ? 'text-string' : 'text-muted'}`}>
                   <Icon name={ic} size={24} stroke={route.name === r ? 2.2 : 1.8} />{l}
                 </button>
               )}

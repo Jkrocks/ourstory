@@ -81,6 +81,7 @@ export type Route =
   | { name: 'people' }
   | { name: 'places'; place?: string }
   | { name: 'favorites' }
+  | { name: 'album' }
   | { name: 'settings' };
 
 export type AddKind = 'photo' | 'video' | 'story' | 'milestone' | 'date';
@@ -123,7 +124,7 @@ interface Ctx extends UI {
 
 const C = createContext<Ctx | null>(null);
 
-const ROUTES = ['home', 'timeline', 'memories', 'people', 'places', 'favorites', 'settings'] as const;
+const ROUTES = ['home', 'timeline', 'memories', 'people', 'places', 'favorites', 'album', 'settings'] as const;
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
