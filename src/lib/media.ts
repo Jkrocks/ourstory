@@ -33,6 +33,7 @@ export function mediaUrlSync(src?: string): string | undefined {
   if (src.startsWith('idb:')) return localSync(src.slice(4));
   if (src.startsWith('sb:')) return cloudUrlSync(src.slice(3));
   if (src.startsWith('yt:')) return ytThumb(src.slice(3));
+  if (src.startsWith('gd:')) return driveImage(src.slice(3));
   return src;
 }
 
@@ -47,6 +48,26 @@ export function removeMedia(src: string) {
   if (src.startsWith('idb:')) deleteMedia(src.slice(4));
   if (src.startsWith('sb:')) removeFromCloud(src.slice(3)).catch(() => {});
 }
+
+/* ---------- Google Drive ----------
+   The file stays in your own Drive; the album only keeps its link.
+   The file must be shared as "Anyone with the link can view" for it to show here. */
+export function driveId(input: string): string | null {
+  const s = input.trim();
+  try {
+    const u = new URL(s.startsWith('http') ? s : `https://${s}`);
+    if (!/(^|\.)google\.com$/.test(u.hostname)) return null;
+    const m = u.pathname.match(/\/(?:file|document|presentation)\/d\/([\w-]{20,})/) ?? u.pathname.match(/\/d\/([\w-]{20,})/);
+    if (m) return m[1];
+    const q = u.searchParams.get('id');
+    if (q && /^[\w-]{20,}$/.test(q)) return q;
+  } catch { /* not a url */ }
+  return null;
+}
+export const isDriveFolder = (input: string) => /drive\.google\.com\/drive\/(u\/\d+\/)?folders\//.test(input);
+export const driveImage = (id: string, w = 1600) => `https://drive.google.com/thumbnail?id=${id}&sz=w${w}`;
+export const drivePreview = (id: string) => `https://drive.google.com/file/d/${id}/preview`;
+export const driveOpen = (id: string) => `https://drive.google.com/file/d/${id}/view`;
 
 /* ---------- YouTube ---------- */
 export function ytId(input: string): string | null {

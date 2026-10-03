@@ -229,8 +229,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // theme
   useEffect(() => {
     const el = document.documentElement;
-    if (state.family.theme === 'system') el.removeAttribute('data-theme');
-    else el.setAttribute('data-theme', state.family.theme);
+    el.setAttribute('data-theme', state.family.theme === 'dark' ? 'dark' : 'light');
     try { localStorage.setItem('ourstory-theme', state.family.theme); } catch { /* storage blocked */ }
   }, [state.family.theme]);
 
@@ -282,7 +281,8 @@ export function removeBlobs(media: Media[]) {
 }
 
 function withTheme(st: AppState): AppState {
-  let theme = st.family.theme ?? 'system';
-  try { theme = (localStorage.getItem('ourstory-theme') as AppState['family']['theme']) || theme; } catch { /* storage blocked */ }
+  // the look is each person's own choice on their own device; light unless they picked dark
+  let theme: AppState['family']['theme'] = 'light';
+  try { if (localStorage.getItem('ourstory-theme') === 'dark') theme = 'dark'; } catch { /* storage blocked */ }
   return { ...st, family: { ...st.family, theme } };
 }

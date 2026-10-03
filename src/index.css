@@ -30,17 +30,7 @@
   --grain: 0;
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: 30 30 32; --card: 42 42 45; --ink: 238 237 233; --muted: 170 168 162;
-    --line: 70 70 74; --sand: 58 58 62; --peach: 255 132 104; --sage: 64 196 190;
-    --honey: 255 190 50; --heart: 250 102 150; --indigo: 138 150 250; --leaf: 104 204 128;
-    --lilac: 186 146 246; --sky: 100 186 250; --string: 214 150 116; --string-dark: 150 96 68;
-    --tape: 150 160 112; --frame: 240 239 235; --shadow: 0 0 0; --grain: 0; --hi: .03;
-    --on-dark: 27 23 30;
-    color-scheme: dark;
-  }
-}
+/* Light is the default for everyone. Dark applies only when the person switches it on in Settings. */
 :root[data-theme="dark"] {
   --paper: 30 30 32; --card: 42 42 45; --ink: 238 237 233; --muted: 170 168 162;
   --line: 70 70 74; --sand: 58 58 62; --peach: 255 132 104; --sage: 64 196 190;

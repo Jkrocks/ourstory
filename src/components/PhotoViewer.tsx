@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore, removeBlobs } from '../lib/store';
 import { fmtDate } from '../lib/utils';
 import { Avatar, HeartButton, Icon, Img, useSrc } from './ui';
-import { mediaMode, ytEmbed, ytWatch } from '../lib/media';
+import { driveOpen, drivePreview, mediaMode, ytEmbed, ytWatch } from '../lib/media';
 import type { Media } from '../lib/types';
 
 function DemoClip({ media }: { media: Media }) {
@@ -48,6 +48,22 @@ function YouTube({ media }: { media: Media }) {
       </div>
       <a href={ytWatch(id)} target="_blank" rel="noopener noreferrer" className="mx-auto mt-3 flex w-fit items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[14px] font-bold hover:bg-white/20">
         <Icon name="play" size={14} fill /> Open on YouTube
+      </a>
+    </div>
+  );
+}
+
+function DriveVideo({ media }: { media: Media }) {
+  const id = media.src.slice(3);
+  return (
+    <div className="mx-auto w-full max-w-5xl">
+      {mediaMode() === 'inline' ? <Img media={media} className="aspect-video w-full rounded-[12px]" eager /> : (
+        <div className="relative aspect-video w-full overflow-hidden rounded-[12px] bg-black">
+          <iframe src={drivePreview(id)} title="Google Drive video" className="absolute inset-0 h-full w-full" allow="autoplay; fullscreen" allowFullScreen />
+        </div>
+      )}
+      <a href={driveOpen(id)} target="_blank" rel="noopener noreferrer" className="mx-auto mt-3 flex w-fit items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[14px] font-bold hover:bg-white/20">
+        <Icon name="play" size={14} fill /> Open in Google Drive
       </a>
     </div>
   );
@@ -131,7 +147,7 @@ export function PhotoViewer() {
         }}
       >
         <div key={media.id} className="anim-fade flex max-h-full w-full items-center justify-center">
-          {media.kind === 'youtube' ? <YouTube media={media} /> : media.kind === 'video' ? (isDemoVideo ? <DemoClip media={media} /> : <RealVideo media={media} />) : (
+          {media.kind === 'youtube' ? <YouTube media={media} /> : media.kind === 'video' ? (isDemoVideo ? <DemoClip media={media} /> : media.src.startsWith('gd:') ? <DriveVideo media={media} /> : <RealVideo media={media} />) : (
             <Img media={media} cover={false} eager className="max-h-[74vh] w-auto max-w-full rounded-[6px] !bg-transparent" alt={media.caption ?? mem.title} />
           )}
         </div>

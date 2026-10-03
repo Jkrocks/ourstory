@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import type { Media, Memory } from '../lib/types';
 import { useStore, removeBlobs, type AddKind } from '../lib/store';
 import { shrinkImage, videoRatio } from '../lib/storage';
-import { mediaMode, uploadMedia, ytId } from '../lib/media';
+import { driveId, isDriveFolder, mediaMode, uploadMedia, ytId } from '../lib/media';
 import { fmtDate, today, uid } from '../lib/utils';
 import { Avatar, Btn, Icon, Img, Sheet, SheetHeader } from './ui';
 
@@ -90,6 +90,16 @@ export function AddMemoryForm({ kind, edit, files }: { kind: AddKind; edit?: Mem
 
   const heading = isEdit ? 'Edit memory' : { photo: 'New photo memory', video: 'New video memory', story: 'Write a story', milestone: 'A new milestone', date: 'An important date' }[kind];
 
+  const [gd, setGd] = useState('');
+  const [gdErr, setGdErr] = useState('');
+  const addDrive = (as: 'photo' | 'video') => {
+    if (isDriveFolder(gd)) { setGdErr('That’s a folder link. Open the photo or video in Drive, then Share → Copy link, and paste that one.'); return; }
+    const id = driveId(gd);
+    if (!id) { setGdErr('That doesn’t look like a Google Drive file link. In Drive: open the file → Share → Copy link.'); return; }
+    setKeep((k) => [...k, { id: uid(), kind: as, src: `gd:${id}`, ratio: as === 'video' ? 16 / 9 : 4 / 3 }]);
+    setGd(''); setGdErr('');
+  };
+
   const addYouTube = () => {
     const id = ytId(yt);
     if (!id) { setYtErr('That doesn’t look like a YouTube link. Copy it from the Share button on YouTube.'); return; }
@@ -144,7 +154,7 @@ export function AddMemoryForm({ kind, edit, files }: { kind: AddKind; edit?: Mem
 
   const toggle = (id: string) => setPeople((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const insertPrompt = (q: string) => setStory((s) => (s ? s.replace(/\s*$/, '\n\n') : '') + q + ' ');
-  const showMedia = kind === 'photo' || kind === 'video' || isEdit || pending.length > 0;
+  const showMedia = true;
   const field = 'w-full rounded-[14px] border border-line bg-paper px-4 py-3 text-[17px] text-ink placeholder:text-muted/70 focus:border-ink focus:outline-none';
 
   return (
@@ -219,6 +229,17 @@ export function AddMemoryForm({ kind, edit, files }: { kind: AddKind; edit?: Mem
                 </div>
                 {ytErr && <p className="mt-1 text-[14px] text-heart" role="alert">{ytErr}</p>}
                 <p className="mt-1 text-[13px] text-muted">{inline ? 'Upload your video to YouTube (unlisted is fine) and paste the link here. Video files are too big to keep in a shared page.' : 'Long videos stay on YouTube and play here. Unlisted videos work too.'}</p>
+              </div>
+              <div className="mt-4">
+                <label htmlFor="m-gd" className="mb-2 flex items-center gap-2 text-[15px] font-semibold"><span className="grid h-6 w-8 place-items-center rounded-[7px] bg-sage text-white"><Icon name="folder" size={13} /></span> Google Drive link</label>
+                <div className="flex flex-wrap gap-2">
+                  <input id="m-gd" value={gd} onChange={(e) => { setGd(e.target.value); setGdErr(''); }} inputMode="url" placeholder="https://drive.google.com/file/d/…"
+                    className="min-h-[48px] min-w-[200px] flex-1 rounded-full border border-line bg-paper px-4 text-[16px] focus:border-string focus:outline-none" />
+                  <Btn variant="soft" onClick={() => addDrive('photo')} disabled={!gd.trim()}>Add photo</Btn>
+                  <Btn variant="soft" onClick={() => addDrive('video')} disabled={!gd.trim()}>Add video</Btn>
+                </div>
+                {gdErr && <p className="mt-1 text-[14px] text-heart" role="alert">{gdErr}</p>}
+                <p className="mt-1 text-[13px] text-muted">The file stays in your own Google Drive. Share it as “Anyone with the link can view” so it can show here.</p>
               </div>
               <input ref={camRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => addFiles(e.target.files)} />
               <input ref={pickRef} type="file" accept={inline ? 'image/*' : 'image/*,video/*'} multiple hidden onChange={(e) => addFiles(e.target.files)} />

@@ -23,6 +23,10 @@ function Root() {
   );
 }
 
+// Light by default; dark only if this person chose it earlier.
+try { document.documentElement.setAttribute('data-theme', localStorage.getItem('ourstory-theme') === 'dark' ? 'dark' : 'light'); }
+catch { document.documentElement.setAttribute('data-theme', 'light'); }
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>

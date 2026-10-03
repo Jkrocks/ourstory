@@ -210,11 +210,11 @@ export function Settings() {
           <p className="text-[14px] text-muted">From Google Photos: open an album, choose Download all, then pick the files here.</p>
         </SettingBlock>
 
-        <SettingBlock title="Appearance" sub="Light for daytime, dark for bedtime stories.">
+        <SettingBlock title="Appearance" sub="OurStory is light by default. Switch to dark if you prefer it; it only changes on this device.">
           <div role="radiogroup" aria-label="Theme" className="inline-flex rounded-full bg-sand p-1">
-            {(['system', 'light', 'dark'] as Theme[]).map((t) => (
-              <button key={t} role="radio" aria-checked={f.theme === t} onClick={() => dispatch({ t: 'family', f: { theme: t } })}
-                className={`min-h-[44px] rounded-full px-5 font-semibold capitalize ${f.theme === t ? 'bg-card shadow-sm' : 'text-muted'}`}>{t === 'system' ? 'Automatic' : t}</button>
+            {(['light', 'dark'] as Theme[]).map((t) => (
+              <button key={t} role="radio" aria-checked={(f.theme === 'dark' ? 'dark' : 'light') === t} onClick={() => dispatch({ t: 'family', f: { theme: t } })}
+                className={`min-h-[44px] rounded-full px-5 font-semibold capitalize ${(f.theme === 'dark' ? 'dark' : 'light') === t ? 'bg-card shadow-sm' : 'text-muted'}`}>{t}</button>
             ))}
           </div>
         </SettingBlock>

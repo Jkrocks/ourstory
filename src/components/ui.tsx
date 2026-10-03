@@ -71,6 +71,13 @@ export function Img({ media, className = '', alt = '', cover = true, eager = fal
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   if (!media) return <div className={`bg-sand ${className}`} />;
+  if (media.src.startsWith('gd:') && failed) {
+    return (
+      <div className={`grid place-items-center bg-sand p-3 text-center text-[13px] leading-snug text-muted ${className}`} role="img" aria-label={alt || 'Google Drive file'}>
+        <span><b className="block text-ink">Can’t show this Drive file</b>In Google Drive set it to “Anyone with the link”.</span>
+      </div>
+    );
+  }
   if (media.kind === 'youtube' && failed) {
     return (
       <div className={`tone-coral relative grid place-items-center overflow-hidden bg-[linear-gradient(135deg,rgb(var(--heart)),rgb(var(--peach))_60%,rgb(var(--honey)))] text-white ${className}`} role="img" aria-label={alt || 'YouTube video'}>
@@ -78,7 +85,7 @@ export function Img({ media, className = '', alt = '', cover = true, eager = fal
       </div>
     );
   }
-  const isUploadedVideo = media.kind === 'video' && !media.src.startsWith('scene:');
+  const isUploadedVideo = media.kind === 'video' && !media.src.startsWith('scene:') && !media.src.startsWith('gd:');
   if (isUploadedVideo) {
     return <video src={url ? url + '#t=0.5' : undefined} muted playsInline preload="metadata" className={`${cover ? 'object-cover' : 'object-contain'} bg-sand ${className}`} aria-label={alt} />;
   }
