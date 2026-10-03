@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import type { Media, Memory } from '../lib/types';
 import { useStore, removeBlobs, type AddKind } from '../lib/store';
 import { shrinkImage, videoRatio } from '../lib/storage';
 import { driveId, isDriveFolder, mediaMode, uploadMedia, ytId } from '../lib/media';
+import { connectDrive, driveUploadReady, prepareDrive } from '../lib/drive';
 import { fmtDate, today, uid } from '../lib/utils';
 import { Avatar, Btn, Icon, Img, Sheet, SheetHeader } from './ui';
 
@@ -69,6 +70,9 @@ export function AddMemoryForm({ kind, edit, files }: { kind: AddKind; edit?: Mem
   const [yt, setYt] = useState('');
   const [ytErr, setYtErr] = useState('');
   const inline = mediaMode() === 'inline';
+  const toDrive = mediaMode() === 'cloud';
+  const canPick = !toDrive || driveUploadReady();
+  useEffect(() => { if (toDrive) prepareDrive(); }, [toDrive]);
   const camRef = useRef<HTMLInputElement>(null);
   const pickRef = useRef<HTMLInputElement>(null);
   const vidRef = useRef<HTMLInputElement>(null);
@@ -113,6 +117,8 @@ export function AddMemoryForm({ kind, edit, files }: { kind: AddKind; edit?: Mem
     const pendingYt = ytId(yt);
     if (pendingYt) media.push({ id: uid(), kind: 'youtube', src: `yt:${pendingYt}`, ratio: 16 / 9 });
     try {
+      // Ask Google first, while this is still a button press, so the pop-up isn't blocked.
+      if (toDrive && pending.length) await connectDrive();
       for (const p of pending) {
         const id = uid();
         if (p.kind === 'photo') {
@@ -125,7 +131,7 @@ export function AddMemoryForm({ kind, edit, files }: { kind: AddKind; edit?: Mem
       }
     } catch {
       setSaving(false);
-      toast('A photo or video didn’t upload. Check your connection and try Save again.');
+      toast(toDrive ? 'Couldn’t save to Google Drive. Allow the Google pop-up, then try Save again.' : 'A photo or video didn’t upload. Check your connection and try Save again.');
       return;
     }
     if (edit) removeBlobs(edit.media.filter((x) => !keep.includes(x)));
@@ -211,7 +217,8 @@ export function AddMemoryForm({ kind, edit, files }: { kind: AddKind; edit?: Mem
                   ))}
                 </ul>
               )}
-              <div className="flex flex-wrap gap-2">
+              {toDrive && <p className="mb-2 text-[14px] text-muted">{canPick ? 'Photos and videos you pick are saved in your own Google Drive, in a folder called OurStory.' : 'Photos and videos are kept in Google Drive. Paste a Drive link below, or a YouTube link for videos.'}</p>}
+              <div className={`flex flex-wrap gap-2 ${canPick ? '' : 'hidden'}`}>
                 {kind !== 'video' && (
                   <>
                     <Btn variant="soft" onClick={() => camRef.current?.click()}><Icon name="camera" size={20} /> Take photo</Btn>

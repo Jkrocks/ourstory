@@ -3,7 +3,8 @@ import { useStore } from '../lib/store';
 import type { Person } from '../lib/types';
 import { ageOn, fmtDate, today, uid } from '../lib/utils';
 import { shrinkImage } from '../lib/storage';
-import { uploadMedia } from '../lib/media';
+import { mediaMode, uploadMedia } from '../lib/media';
+import { driveUploadReady } from '../lib/drive';
 import { Avatar, Btn, Icon, Sheet, SheetHeader } from '../components/ui';
 
 const TINTS = ['#5FA8E0', '#F58A6B', '#5CC08A', '#FFD24A', '#B993F0', '#F28FB1', '#F6B73C', '#4CC3C0'];
@@ -115,12 +116,12 @@ function PersonSheet({ person, onClose }: { person?: Person; onClose: () => void
       }}>
         <div className="flex items-center gap-4">
           <Avatar person={draft} size={80} />
-          <Btn variant="soft" onClick={() => fileRef.current?.click()}><Icon name="camera" size={20} /> {photo ? 'Change photo' : 'Add photo'}</Btn>
+          {(mediaMode() !== 'cloud' || driveUploadReady()) && <Btn variant="soft" onClick={() => fileRef.current?.click()}><Icon name="camera" size={20} /> {photo ? 'Change photo' : 'Add photo'}</Btn>}
           <input ref={fileRef} type="file" accept="image/*" hidden onChange={async (e) => {
             const f = e.target.files?.[0];
             if (!f) return;
             const { blob } = await shrinkImage(f, 600);
-            setPhoto(await uploadMedia(blob, 'photo'));
+            try { setPhoto(await uploadMedia(blob, 'photo')); } catch { /* Google pop-up closed or blocked */ }
           }} />
         </div>
         <div>

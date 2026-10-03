@@ -6,6 +6,7 @@ import type { Memory, Privacy, Theme } from '../lib/types';
 import { byDateDesc, coverOf, fmtDate, parts, stats, toneAt, uid, yearsTogether } from '../lib/utils';
 import { shrinkImage, videoRatio } from '../lib/storage';
 import { mediaMode, uploadMedia } from '../lib/media';
+import { connectDrive, driveUploadReady } from '../lib/drive';
 import { Avatar, Btn, Empty, Icon, Img } from '../components/ui';
 import { MemoryCard } from '../components/MemoryCard';
 import { Masonry } from './Memories';
@@ -143,6 +144,7 @@ export function Settings() {
       const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       byDay.set(iso, [...(byDay.get(iso) ?? []), file]);
     });
+    if (mediaMode() === 'cloud') { try { await connectDrive(); } catch { toast('Allow the Google pop-up so photos can be saved to your Drive, then try again.'); return; } }
     setImporting(files.length);
     for (const [date, list] of byDay) {
       const media = [];
@@ -229,11 +231,11 @@ export function Settings() {
           )}
         </SettingBlock>}
 
-        <SettingBlock title="Add many photos at once" sub="Pick photos and videos from your phone, camera roll or an album you downloaded. We’ll sort them into memories by date.">
+        {(mediaMode() !== 'cloud' || driveUploadReady()) && <SettingBlock title="Add many photos at once" sub="Pick photos and videos from your phone, camera roll or an album you downloaded. We’ll sort them into memories by date.">
           <Btn onClick={() => importRef.current?.click()} disabled={importing > 0}><Icon name="upload" size={20} /> {importing ? `Adding ${importing} files…` : 'Choose photos & videos'}</Btn>
           <input ref={importRef} type="file" multiple accept="image/*,video/*" hidden onChange={(e) => importFiles(e.target.files)} />
           <p className="text-[14px] text-muted">From Google Photos: open an album, choose Download all, then pick the files here.</p>
-        </SettingBlock>
+        </SettingBlock>}
 
         <SettingBlock title="Appearance" sub="OurStory is light by default. Switch to dark if you prefer it; it only changes on this device.">
           <div role="radiogroup" aria-label="Theme" className="inline-flex rounded-full bg-sand p-1">

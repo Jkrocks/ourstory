@@ -3,15 +3,17 @@
 //   sb:…     uploaded to the family's cloud storage      yt:…  a YouTube video
 import { sceneUrl } from './scenes';
 import { getMediaUrl, mediaUrlSync as localSync, putMedia, deleteMedia } from './storage';
-import { cloudUrl, cloudUrlSync, removeFromCloud, uploadToCloud } from './cloud';
+import { cloudUrl, cloudUrlSync, removeFromCloud } from './cloud';
 import { uid } from './utils';
+import { uploadToDrive } from './drive';
 
 let mode: 'local' | 'cloud' | 'inline' = 'local';
 export const setMediaMode = (m: 'local' | 'cloud' | 'inline') => { mode = m; };
 export const mediaMode = () => mode;
 
 export async function uploadMedia(blob: Blob, kind: 'photo' | 'video'): Promise<string> {
-  if (mode === 'cloud') return uploadToCloud(blob, kind);
+  // Live site: photos and videos go to Google Drive only. (Older sb: files still show.)
+  if (mode === 'cloud') return `gd:${await uploadToDrive(blob, kind)}`;
   if (mode === 'inline') {
     // the album is embedded in the page, so photos travel as small data URLs; video files are too big
     if (kind === 'video') throw new Error('video_inline');
