@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth';
-import { addInvite, familyMembers, listInvites, newInviteCode, removeInvite, removeMember, setPublicLink, shareUrl, siteUrl, type MemberRow } from '../lib/cloud';
+import { addInvite, familyMembers, listInvites, newInviteCode, removeInvite, removeMember, setPassword, setPublicLink, shareUrl, siteUrl, type MemberRow } from '../lib/cloud';
 import { useStore } from '../lib/store';
 import type { Memory, Privacy, Theme } from '../lib/types';
 import { byDateDesc, coverOf, fmtDate, parts, stats, toneAt, uid, yearsTogether } from '../lib/utils';
@@ -259,6 +259,7 @@ function AccountBlock() {
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [invites, setInvites] = useState<string[]>([]);
   const [email, setEmail] = useState('');
+  const [pw, setPw] = useState('');
   useEffect(() => { if (auth.mode === 'cloud') { familyMembers().then(setMembers).catch(() => {}); listInvites().then(setInvites).catch(() => {}); } }, [auth.mode, auth.family?.id]);
 
   if (auth.mode === 'published') return <PublishBlock />;
@@ -351,6 +352,18 @@ function AccountBlock() {
       </SettingBlock>
       {isOwner && <PublicLinkBlock />}
       <SettingBlock title="Account" sub={`Signed in as ${auth.user?.email ?? auth.user?.name}.`}>
+        <form className="flex flex-wrap gap-2" onSubmit={async (e) => {
+          e.preventDefault();
+          if (pw.length < 8) { toast('Use at least 8 characters.'); return; }
+          try { await setPassword(pw); setPw(''); toast('Password saved. Next time, sign in with it. No email needed.'); }
+          catch { toast('Couldn’t save the password. Try again.'); }
+        }}>
+          <label htmlFor="acc-pw" className="sr-only">New password</label>
+          <input id="acc-pw" type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Set a password (8+ characters)"
+            className="min-h-[48px] min-w-0 flex-1 rounded-full border border-line bg-card px-4 focus:border-ink focus:outline-none" />
+          <Btn type="submit" variant="soft">Save password</Btn>
+        </form>
+        <p className="text-[14px] text-muted">With a password you can sign in on any device without waiting for an email.</p>
         <Btn variant="soft" onClick={() => auth.signOut()}>Sign out</Btn>
       </SettingBlock>
     </>

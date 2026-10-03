@@ -95,6 +95,11 @@ export async function removeMember(uid: string) {
   if (error) throw error;
 }
 
+export async function setPassword(password: string) {
+  const { error } = await sb().auth.updateUser({ password });
+  if (error) throw error;
+}
+
 export const siteUrl = () => `${location.origin}${import.meta.env.BASE_URL}`;
 
 /* ---------- public, read-only timeline ---------- */
