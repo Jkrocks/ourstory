@@ -57,11 +57,45 @@ export async function newInviteCode(): Promise<string> {
   return data as string;
 }
 
-export async function familyMembers(): Promise<{ user_id: string; display_name: string | null; role: string }[]> {
+export interface MemberRow { user_id: string; display_name: string | null; role: string; email?: string | null }
+
+export async function familyMembers(): Promise<MemberRow[]> {
   if (!familyId) return [];
+  const full = await sb().rpc('os_members', { p_family: familyId });
+  if (!full.error && full.data) return full.data as MemberRow[];
   const { data } = await sb().from('os_family_members').select('user_id, display_name, role').eq('family_id', familyId);
   return data ?? [];
 }
+
+/* ---------- invite people by email ---------- */
+/** After sign-in: join every album this email address was added to. */
+export async function acceptInvites(displayName: string): Promise<number> {
+  const { data, error } = await sb().rpc('os_accept_invites', { p_display_name: displayName });
+  return error ? 0 : (data as number) ?? 0;
+}
+
+export async function listInvites(): Promise<string[]> {
+  if (!familyId) return [];
+  const { data } = await sb().from('os_invites').select('email').eq('family_id', familyId).order('created_at');
+  return (data ?? []).map((r) => r.email as string);
+}
+
+export async function addInvite(email: string) {
+  const { error } = await sb().from('os_invites').upsert({ family_id: familyId, email: email.trim().toLowerCase(), invited_by: userId }, { onConflict: 'family_id,email', ignoreDuplicates: true });
+  if (error) throw error;
+}
+
+export async function removeInvite(email: string) {
+  const { error } = await sb().from('os_invites').delete().eq('family_id', familyId!).eq('email', email);
+  if (error) throw error;
+}
+
+export async function removeMember(uid: string) {
+  const { error } = await sb().from('os_family_members').delete().eq('family_id', familyId!).eq('user_id', uid);
+  if (error) throw error;
+}
+
+export const siteUrl = () => `${location.origin}${import.meta.env.BASE_URL}`;
 
 /* ---------- public, read-only timeline ---------- */
 export async function loadPublicAlbum(slug: string): Promise<AppState | null> {

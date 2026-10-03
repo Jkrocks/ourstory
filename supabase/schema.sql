@@ -187,3 +187,48 @@ create policy "os members delete media" on storage.objects for delete to authent
 
 -- Live updates for other family members --------------------------------------
 alter publication supabase_realtime add table public.os_memories, public.os_people;
+
+-- Invite people by email ------------------------------------------------------
+-- Owner adds an email; when that person signs in they join the same album automatically.
+create table if not exists public.os_invites (
+  family_id  uuid not null references public.os_families on delete cascade,
+  email      text not null check (email = lower(email) and char_length(email) between 5 and 200 and email like '%_@_%._%'),
+  invited_by uuid references auth.users on delete set null,
+  created_at timestamptz not null default now(),
+  primary key (family_id, email)
+);
+alter table public.os_invites enable row level security;
+
+create policy "os members see invites" on public.os_invites for select to authenticated using (os_is_member(family_id));
+create policy "os owner adds invites"  on public.os_invites for insert to authenticated with check (os_is_owner(family_id));
+create policy "os owner removes invites" on public.os_invites for delete to authenticated using (os_is_owner(family_id));
+
+create or replace function public.os_accept_invites(p_display_name text) returns int
+language plpgsql security definer set search_path = public as $$
+declare em text; n int := 0;
+begin
+  if auth.uid() is null then raise exception 'not signed in'; end if;
+  select lower(email) into em from auth.users where id = auth.uid() and email_confirmed_at is not null;
+  if em is null then return 0; end if;
+  with joined as (
+    insert into os_family_members (family_id, user_id, display_name)
+    select i.family_id, auth.uid(), left(p_display_name, 80) from os_invites i where i.email = em
+    on conflict (family_id, user_id) do nothing
+    returning 1
+  ) select count(*) into n from joined;
+  delete from os_invites where email = em;
+  return n;
+end $$;
+revoke all on function public.os_accept_invites(text) from public, anon;
+grant execute on function public.os_accept_invites(text) to authenticated;
+
+create or replace function public.os_members(p_family uuid)
+returns table (user_id uuid, display_name text, role text, email text)
+language sql stable security definer set search_path = public as $$
+  select m.user_id, m.display_name, m.role, u.email::text
+  from os_family_members m join auth.users u on u.id = m.user_id
+  where m.family_id = p_family and os_is_member(p_family)
+  order by m.joined_at;
+$$;
+revoke all on function public.os_members(uuid) from public, anon;
+grant execute on function public.os_members(uuid) to authenticated;

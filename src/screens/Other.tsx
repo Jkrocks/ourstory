@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth';
-import { familyMembers, newInviteCode, setPublicLink, shareUrl } from '../lib/cloud';
+import { addInvite, familyMembers, listInvites, newInviteCode, removeInvite, removeMember, setPublicLink, shareUrl, siteUrl, type MemberRow } from '../lib/cloud';
 import { useStore } from '../lib/store';
 import type { Memory, Privacy, Theme } from '../lib/types';
 import { byDateDesc, coverOf, fmtDate, parts, stats, toneAt, uid, yearsTogether } from '../lib/utils';
@@ -256,8 +256,10 @@ function SettingBlock({ title, sub, children }: { title: string; sub: string; ch
 function AccountBlock() {
   const auth = useAuth();
   const { state, toast } = useStore();
-  const [members, setMembers] = useState<{ user_id: string; display_name: string | null; role: string }[]>([]);
-  useEffect(() => { if (auth.mode === 'cloud') familyMembers().then(setMembers).catch(() => {}); }, [auth.mode, auth.family?.id]);
+  const [members, setMembers] = useState<MemberRow[]>([]);
+  const [invites, setInvites] = useState<string[]>([]);
+  const [email, setEmail] = useState('');
+  useEffect(() => { if (auth.mode === 'cloud') { familyMembers().then(setMembers).catch(() => {}); listInvites().then(setInvites).catch(() => {}); } }, [auth.mode, auth.family?.id]);
 
   if (auth.mode === 'published') return <PublishBlock />;
 
@@ -283,30 +285,69 @@ function AccountBlock() {
   };
   return (
     <>
-      <SettingBlock title="Invite family" sub="Everyone who joins can see the album and add memories. No one else can.">
-        <div className="tone-pink bg-tone-soft flex flex-wrap items-center gap-4 rounded-[20px] p-5">
-          <div>
-            <p className="text-[13px] font-bold tracking-[.14em] text-muted">FAMILY CODE</p>
-            <p className="select-all font-display text-[34px] leading-none tracking-[.12em] tnum">{code.toUpperCase()}</p>
-          </div>
-          <Btn className="ml-auto" onClick={copy}><Icon name="share" size={18} /> Copy invite</Btn>
-          {isOwner && (
-            <button className="min-h-[44px] text-[14px] font-bold text-muted underline underline-offset-4" onClick={async () => {
-              try { const c = await newInviteCode(); setCode(c); toast('New code made. The old one no longer works.'); }
-              catch { toast('Couldn’t change the code. Try again.'); }
-            }}>New code</button>
-          )}
-        </div>
-        {members.length > 0 && (
-          <ul className="flex flex-wrap gap-2 pt-1">
-            {members.map((m, i) => (
-              <li key={m.user_id} className={`tone-${toneAt(i)} inline-flex min-h-[40px] items-center gap-2 rounded-full bg-card py-1 pl-1 pr-4 text-[14px] font-medium shadow-sm`}>
-                <span className="bg-tone grid h-8 w-8 place-items-center rounded-full text-[13px] font-bold">{(m.display_name ?? '?').slice(0, 1)}</span>
-                {m.display_name ?? 'Family member'}{m.role === 'owner' ? ' · owner' : ''}
-              </li>
-            ))}
-          </ul>
+      <SettingBlock title="People who can add" sub="Add someone’s email. When they sign in on the OurStory page with that email, they land in this same album and can add photos, videos and YouTube links.">
+        {isOwner && (
+          <form className="flex flex-wrap gap-2" onSubmit={async (e) => {
+            e.preventDefault();
+            const em = email.trim().toLowerCase();
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { toast('That doesn’t look like an email address.'); return; }
+            try { await addInvite(em); setInvites((l) => (l.includes(em) ? l : [...l, em])); setEmail(''); toast(`${em} added. Send them the page link.`); }
+            catch { toast('Couldn’t add that email. Try again.'); }
+          }}>
+            <label htmlFor="inv-email" className="sr-only">Email address</label>
+            <input id="inv-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@gmail.com" autoComplete="off"
+              className="min-h-[48px] min-w-0 flex-1 rounded-full border border-line bg-card px-4 focus:border-ink focus:outline-none" />
+            <Btn type="submit"><Icon name="plus" size={18} /> Add</Btn>
+          </form>
         )}
+        <ul className="space-y-2">
+          {members.map((m, i) => (
+            <li key={m.user_id} className={`tone-${toneAt(i)} flex min-h-[52px] items-center gap-3 rounded-[16px] bg-card px-3 py-2`}>
+              <span className="bg-tone grid h-9 w-9 shrink-0 place-items-center rounded-full text-[14px] font-bold">{(m.display_name ?? m.email ?? '?').slice(0, 1).toUpperCase()}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold">{m.display_name ?? 'Family member'}{m.role === 'owner' ? ' · owner' : ''}</span>
+                {m.email && <span className="block truncate text-[13px] text-muted">{m.email}</span>}
+              </span>
+              {isOwner && m.role !== 'owner' && (
+                <button className="min-h-[40px] px-2 text-[13px] font-bold text-heart underline underline-offset-4" onClick={async () => {
+                  try { await removeMember(m.user_id); setMembers((l) => l.filter((x) => x.user_id !== m.user_id)); toast('Removed. They can no longer see or add.'); }
+                  catch { toast('Couldn’t remove them. Try again.'); }
+                }}>Remove</button>
+              )}
+            </li>
+          ))}
+          {invites.map((em) => (
+            <li key={em} className="flex min-h-[52px] items-center gap-3 rounded-[16px] border border-dashed border-line px-3 py-2">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sand text-[14px] font-bold">{em.slice(0, 1).toUpperCase()}</span>
+              <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{em}</span><span className="block text-[13px] text-muted">Added · waiting for them to sign in</span></span>
+              {isOwner && (
+                <button className="min-h-[40px] px-2 text-[13px] font-bold text-muted underline underline-offset-4" onClick={async () => {
+                  try { await removeInvite(em); setInvites((l) => l.filter((x) => x !== em)); } catch { toast('Couldn’t remove. Try again.'); }
+                }}>Remove</button>
+              )}
+            </li>
+          ))}
+        </ul>
+        <div className="flex flex-wrap items-center gap-2 rounded-[16px] bg-sand p-3">
+          <span className="min-w-0 flex-1 truncate text-[14px]"><b>Page link to send them:</b> {siteUrl()}</span>
+          <Btn variant="soft" onClick={() => {
+            const msg = `Join our family album on OurStory: ${siteUrl()}  Sign in with your email and you’re in.`;
+            try { navigator.clipboard.writeText(msg).then(() => toast('Message copied. Paste it in WhatsApp or email.'), () => toast('Select the link and copy it')); } catch { toast('Select the link and copy it'); }
+          }}><Icon name="link" size={18} /> Copy message</Btn>
+        </div>
+        <details className="text-[14px] text-muted">
+          <summary className="min-h-[36px] cursor-pointer font-bold">Or use a family code</summary>
+          <div className="mt-2 flex flex-wrap items-center gap-4">
+            <span className="select-all font-display text-[24px] tracking-[.12em] text-ink">{code.toUpperCase()}</span>
+            <button className="font-bold underline underline-offset-4" onClick={copy}>Copy invite</button>
+            {isOwner && (
+              <button className="font-bold underline underline-offset-4" onClick={async () => {
+                try { const c = await newInviteCode(); setCode(c); toast('New code made. The old one no longer works.'); }
+                catch { toast('Couldn’t change the code. Try again.'); }
+              }}>New code</button>
+            )}
+          </div>
+        </details>
       </SettingBlock>
       {isOwner && <PublicLinkBlock />}
       <SettingBlock title="Account" sub={`Signed in as ${auth.user?.email ?? auth.user?.name}.`}>

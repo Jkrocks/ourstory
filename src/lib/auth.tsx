@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { cloudEnabled, createFamily as rpcCreate, joinFamily as rpcJoin, myFamilies, setCloudContext, supabase, type FamilyRow } from './cloud';
+import { acceptInvites, cloudEnabled, createFamily as rpcCreate, joinFamily as rpcJoin, myFamilies, setCloudContext, supabase, type FamilyRow } from './cloud';
 import { setMediaMode } from './media';
 import { isPublishedBuild } from './published';
 
@@ -42,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [seed, setSeed] = useState<PreviewSeed>('demo');
 
   const pickFamily = useCallback(async (u: User) => {
+    await acceptInvites(nameOf(u)).catch(() => 0); // join albums this email was added to
     const fams = await myFamilies();
     const wanted = readLS('ourstory-family');
     const f = fams.find((x) => x.id === wanted) ?? fams[0] ?? null;
