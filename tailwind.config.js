@@ -21,7 +21,7 @@ export default {
         sky: 'rgb(var(--sky) / <alpha-value>)',
       },
       fontFamily: {
-        display: ['"Archivo Black"', '"Arial Black"', 'system-ui', 'sans-serif'],
+        display: ['"Cormorant Garamond"', '"Cormorant"', 'Georgia', 'serif'],
         sans: ['"Zen Kaku Gothic New"', 'system-ui', 'sans-serif'],
         hand: ['"Gochi Hand"', '"Comic Sans MS"', 'cursive'],
       },

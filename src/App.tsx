@@ -23,11 +23,9 @@ const NAV: { r: Route['name']; label: string; icon: string }[] = [
 
 function Wordmark({ small = false }: { small?: boolean }) {
   return (
-    <span className="inline-flex flex-col items-start leading-none">
-      {small
-        ? <span className="font-display text-[22px] uppercase leading-none">Our<span className="text-string">Story</span></span>
-        : <span className="font-display text-[24px] uppercase leading-[.86]">Our<br />Story<span className="text-string">.</span></span>}
-      {!small && <span className="mt-1.5 text-[9px] font-bold tracking-[.38em] text-muted">FAMILY TIMELINE</span>}
+    <span className="inline-flex flex-col items-center leading-none">
+      <span className={`font-display leading-none tracking-[-.01em] ${small ? 'text-[26px]' : 'text-[32px]'}`}>OurStory</span>
+      {!small && <span className="mt-1 text-[9px] font-bold tracking-[.38em] text-string">A FAMILY TIMELINE</span>}
     </span>
   );
 }
@@ -97,7 +95,7 @@ export default function App() {
           )}
           {missing ? (
             <div className="mx-auto max-w-md py-24 text-center">
-              <p className="font-display text-[30px] uppercase leading-tight">This story is private</p>
+              <p className="font-display text-[34px] leading-tight">This story is private</p>
               <p className="mt-3 text-muted">The link was switched off or replaced by the family. Ask them for the new link.</p>
               <a href={import.meta.env.BASE_URL} className="mt-6 inline-flex min-h-[48px] items-center rounded-full bg-ink px-6 font-bold text-paper">Go to OurStory</a>
             </div>

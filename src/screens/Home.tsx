@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import type { Memory } from '../lib/types';
 import { useStore } from '../lib/store';
 import { ago, byDateDesc, coverOf, fmtDate, greeting, MON, parts, stats, today, typeOf, yearsTogether } from '../lib/utils';
 import { Btn, Empty, Icon, Img, LinkBtn, SectionHead } from '../components/ui';
 import { Polaroid } from '../components/MemoryCard';
-import { Doodle, Pin, Tape, handDate } from '../components/Wander';
+import { Doodle } from '../components/Wander';
+import { StoryRibbon, pickMoments } from '../components/StoryRibbon';
 import { useLikes } from '../lib/likes';
 
 export function Home() {
@@ -19,8 +19,6 @@ export function Home() {
   const thisYear = mems.filter((m) => parts(m.date).y === t.y).sort((a, b) => (a.date < b.date ? -1 : 1));
   const lastYear = t.y - 1;
   const lastYearMems = mems.filter((m) => parts(m.date).y === lastYear);
-  const favs = mems.filter((m) => m.favorite && coverOf(m)).slice(0, 3);
-  const heroStack = favs.length >= 3 ? favs : mems.filter((m) => coverOf(m)).slice(0, 3);
   const upcoming = mems
     .filter((m) => m.yearly || m.type === 'birthday')
     .map((m) => { const p = parts(m.date); const next = `${p.m < t.m || (p.m === t.m && p.d <= t.d) ? t.y + 1 : t.y}-${m.date.slice(5)}`; return { m, next }; })
@@ -44,18 +42,23 @@ export function Home() {
 
   return (
     <div className="space-y-16 pb-10 pt-4 sm:space-y-20 sm:pt-8">
-      {/* Hero */}
-      <section className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
-        <div className="anim-rise min-w-0">
-          <p className="font-hand text-[24px] text-muted">{greeting()}, {state.family.name} family ❤️</p>
-          <h1 className="mt-3 font-display text-[58px] uppercase leading-[.92] tracking-[-.01em] sm:text-[88px]">Our<br />Story</h1>
-          <p className="mt-4 max-w-md text-[19px] text-ink/80">Your family journey, one memory at a time.</p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            {canEdit && <Btn onClick={() => openAdd('menu')} className="min-h-[56px] px-7 text-[17px]"><Icon name="plus" size={22} /> Add Memory</Btn>}
-            <Btn variant={canEdit ? 'soft' : 'primary'} onClick={() => go({ name: 'timeline' })} className="min-h-[56px] px-6">Explore Our Story</Btn>
-          </div>
-        </div>
-        <HeroBoard mems={heroStack} since={parts(state.family.since).y} onOpen={openMemory} />
+      {/* Hero: the family's story on one ribbon */}
+      <section aria-label="Our story">
+        <StoryRibbon
+          moments={pickMoments(mems, (m) => !!typeOf(state, m.type).milestone)}
+          onOpen={openMemory}
+          title={
+            <div className="anim-rise">
+              <p className="text-[13px] font-medium tracking-[.2em] text-muted">{greeting().toUpperCase()}, {state.family.name.toUpperCase()} FAMILY</p>
+              <h1 className="mt-2 font-display text-[64px] font-normal leading-[.95] tracking-[-.02em] sm:text-[88px] xl:text-[112px]">OurStory</h1>
+              <p className="mt-2 text-[15px] font-medium tracking-[.42em] text-string sm:text-[18px]">A FAMILY TIMELINE</p>
+              <div className="mt-7 flex flex-wrap justify-center gap-3">
+                {canEdit && <Btn onClick={() => openAdd('menu')} className="min-h-[52px] px-6"><Icon name="plus" size={20} /> Add Memory</Btn>}
+                <Btn variant={canEdit ? 'soft' : 'primary'} onClick={() => go({ name: 'timeline' })} className="min-h-[52px] px-6">Explore Our Story</Btn>
+              </div>
+            </div>
+          }
+        />
       </section>
 
       {/* Your story so far */}
@@ -247,41 +250,3 @@ export function Collections({ onPick }: { onPick?: (id: string) => void }) {
   );
 }
 
-/** Three pinned polaroids on string, with tape and doodles: the album's cover. */
-function HeroBoard({ mems, since, onOpen }: { mems: Memory[]; since: number; onOpen: (id: string) => void }) {
-  const spots = [
-    { left: '6%', top: '4%', rot: -4, pin: { x: 82, y: 18 } },
-    { left: '52%', top: '18%', rot: 3.5, pin: { x: 20, y: 22 } },
-    { left: '18%', top: '52%', rot: -2, pin: { x: 78, y: 16 } },
-  ];
-  // pin centres in % of the board, for the string
-  const W = 520, H = 460, PW = 200;
-  const pts = spots.slice(0, mems.length).map((s) => ({
-    x: (parseFloat(s.left) / 100) * W + (s.pin.x / 100) * PW,
-    y: (parseFloat(s.top) / 100) * H + (s.pin.y / 100) * PW * 1.2,
-  }));
-  const d = pts.map((p, i) => (i ? `L ${p.x} ${p.y}` : `M ${p.x} ${p.y}`)).join(' ');
-  return (
-    <div className="relative mx-auto aspect-[520/460] w-full max-w-[520px]" aria-hidden>
-      <Doodle name="curl" className="absolute left-[30%] -top-2 w-[22%]" size={120} />
-      <Doodle name="hearts" className="absolute right-[4%] top-[4%] w-[12%]" size={64} />
-      <Doodle name="scribble" className="absolute bottom-[2%] left-[-6%] w-[46%] opacity-70" size={220} />
-      <Doodle name="star" className="absolute bottom-[30%] right-[4%] w-[10%]" size={56} />
-      <Tape className="right-[-2%] top-[2%] h-10 w-32 rotate-[38deg]" />
-      {mems.map((m, i) => (
-        <button key={m.id} tabIndex={-1} onClick={() => onOpen(m.id)}
-          className="polaroid anim-rise absolute w-[38.5%] transition duration-300 hover:z-30 hover:-translate-y-1"
-          style={{ left: spots[i].left, top: spots[i].top, transform: `rotate(${spots[i].rot}deg)`, animationDelay: `${150 + i * 120}ms` }}>
-          <Img media={coverOf(m)} className="aspect-[5/6] w-full" eager />
-          <span className="block pt-1.5 text-center font-hand text-[17px] leading-none text-[rgb(var(--frame-ink))]">{handDate(m.date)}</span>
-        </button>
-      ))}
-      <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full overflow-visible" viewBox={`0 0 ${W} ${H}`}>
-        <path d={d} fill="none" stroke="rgb(0 0 0 / .18)" strokeWidth="3" transform="translate(2 4)" />
-        <path d={d} fill="none" stroke="rgb(var(--string))" strokeWidth="3" strokeLinecap="round" />
-      </svg>
-      {pts.map((p, i) => <Pin key={i} style={{ left: `calc(${(p.x / W) * 100}% - 11px)`, top: `calc(${(p.y / H) * 100}% - 11px)` }} />)}
-      <span className="absolute bottom-[8%] right-[2%] rotate-[-4deg] font-hand text-[20px] leading-tight text-ink/80">together<br />since {since} ♡</span>
-    </div>
-  );
-}

@@ -150,7 +150,7 @@ export function Settings() {
           </div>
           {!editing ? (
             <>
-              <h1 className="font-display text-[36px] uppercase leading-tight tracking-[.02em] sm:text-[48px]">The {f.name} family ❤️</h1>
+              <h1 className="font-display text-[40px] leading-tight sm:text-[48px]">The {f.name} family ❤️</h1>
               <p className="mt-1 font-hand text-[21px] text-muted">Together since {parts(f.since).y} · {yearsTogether(f.since)} years</p>
               <dl className="mt-6 flex flex-wrap gap-x-8 gap-y-3">
                 {[[state.people.length, 'family members'], [s.memories, 'memories'], [s.photos, 'photos'], [s.videos, 'videos']].map(([n, l]) => (

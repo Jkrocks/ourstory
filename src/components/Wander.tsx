@@ -100,7 +100,7 @@ export function Doodle({ name, className = '', size = 96 }: { name: keyof typeof
 /** A glossy push-pin. */
 export function Pin({ className = '', style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <span className={`pointer-events-none absolute z-20 block h-[22px] w-[22px] rounded-full ${className}`} style={{ background: 'radial-gradient(circle at 35% 30%, #d9ccff 0 12%, rgb(var(--string)) 45%, rgb(var(--string-dark)) 100%)', boxShadow: '2px 4px 5px rgb(0 0 0 / .28)', ...style }} aria-hidden />
+    <span className={`pointer-events-none absolute z-20 block h-[22px] w-[22px] rounded-full ${className}`} style={{ background: 'radial-gradient(circle at 35% 30%, rgb(255 235 220) 0 12%, rgb(var(--string)) 45%, rgb(var(--string-dark)) 100%)', boxShadow: '2px 4px 5px rgb(0 0 0 / .28)', ...style }} aria-hidden />
   );
 }
 
