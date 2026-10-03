@@ -193,9 +193,12 @@ export function Btn({ children, onClick, variant = 'primary', className = '', ty
 /* ---------- overlays ---------- */
 export function Sheet({ onClose, children, label, wide = false, full = false }: { onClose: () => void; children: ReactNode; label: string; wide?: boolean; full?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  // Runs once when the sheet opens. (It must not re-run while typing, or focus jumps back to the first box.)
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
-    const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const k = (e: KeyboardEvent) => e.key === 'Escape' && closeRef.current();
     window.addEventListener('keydown', k);
     const t = setTimeout(() => {
       const f = ref.current?.querySelector<HTMLElement>('[data-autofocus]') ?? ref.current;
@@ -208,7 +211,7 @@ export function Sheet({ onClose, children, label, wide = false, full = false }: 
       document.body.style.overflow = '';
       prev?.focus?.();
     };
-  }, [onClose]);
+  }, []);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={label}>
       <div className="anim-fade absolute inset-0 bg-[rgb(20_14_10/.45)] backdrop-blur-[2px]" onClick={onClose} />

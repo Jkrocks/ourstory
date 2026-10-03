@@ -15,7 +15,7 @@ const out = parts.map((p, i) => {
     return p;
   }
   return p
-    .replace(/<!doctype html>|<\/?html[^>]*>|<\/?head>|<\/?body>|<meta charset[^>]*>|<meta name="viewport"[^>]*>/gi, '')
+    .replace(/<!doctype html>|<\/?html[^>]*>|<\/?head>|<\/?body>|<meta charset[^>]*>|<meta name="viewport"[^>]*>|<meta http-equiv="Content-Security-Policy"[^>]*>/gi, '')
     .replace(/<title>[\s\S]*?<\/title>|<meta name="(?:description|theme-color)"[^>]*>|<link rel="(?:preconnect|stylesheet|icon)" href="(?:https:\/\/fonts|data:)[^>]*>/g, (m) => { head.push(m); return ''; });
 });
 const headHtml = head.join('');
