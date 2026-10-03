@@ -17,6 +17,10 @@ interface Auth {
   seed: PreviewSeed;
   signInGoogle: () => Promise<void>;
   signInEmail: (email: string) => Promise<void>;
+  /** Sign in with a password: no email is sent. */
+  signInPassword: (email: string, password: string) => Promise<void>;
+  /** Create an account. Resolves true if signed in straight away, false if a one-time confirmation email was sent. */
+  signUpPassword: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   createFamily: (name: string, since: string) => Promise<void>;
   joinFamily: (code: string) => Promise<void>;
@@ -94,6 +98,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInEmail: async (email: string) => {
       const { error } = await supabase!.auth.signInWithOtp({ email, options: { emailRedirectTo: (location.origin + import.meta.env.BASE_URL) } });
       if (error) throw error;
+    },
+    signInPassword: async (email: string, password: string) => {
+      const { error } = await supabase!.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    },
+    signUpPassword: async (email: string, password: string) => {
+      const { data, error } = await supabase!.auth.signUp({ email, password, options: { emailRedirectTo: (location.origin + import.meta.env.BASE_URL) } });
+      if (error) throw error;
+      return !!data.session;
     },
     signOut: async () => {
       if (mode === 'preview') { writeLS(PREVIEW_KEY, null); setPhase('signedOut'); return; }

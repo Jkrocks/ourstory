@@ -62,18 +62,31 @@ function Shell({ children }: { children: ReactNode }) {
   );
 }
 
+/** Turn sign-in errors into plain words. */
+function friendly(e: unknown): string {
+  const m = (e instanceof Error ? e.message : String((e as { message?: string })?.message ?? '')).toLowerCase();
+  if (m.includes('rate limit')) return 'Too many emails were sent in the last hour. Sign in with your password instead, or try the email link again in about an hour.';
+  if (m.includes('invalid login')) return 'That email and password don’t match. New here? Choose “Create account”.';
+  if (m.includes('already registered')) return 'This email already has an account. Choose “Sign in”.';
+  if (m.includes('not confirmed')) return 'Open the confirmation email we sent you first, then sign in.';
+  if (m.includes('password')) return 'Use a password with at least 8 characters.';
+  return 'Something went wrong. Check your connection and try again.';
+}
+
 export function Login() {
   const auth = useAuth();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [sent, setSent] = useState(false);
+  const [password, setPassword] = useState('');
+  const [tab, setTab] = useState<'in' | 'up'>('in');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const field = 'min-h-[52px] w-full rounded-full border-2 border-line bg-card px-5 text-[17px] focus:border-heart focus:outline-none';
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true); setErr('');
-    try { await fn(); } catch (e) { setErr(e instanceof Error ? e.message : 'Something went wrong. Try again.'); }
+    try { await fn(); } catch (e) { setErr(friendly(e)); }
     setBusy(false);
   };
 
@@ -89,7 +102,7 @@ export function Login() {
           {sent ? (
             <div className="tone-leaf bg-tone-soft rounded-[22px] p-5" role="status">
               <p className="font-display text-[22px]">Check your inbox 💌</p>
-              <p className="mt-1 text-ink/80">We sent a sign-in link to <b>{email}</b>. Open it on this device to come straight in.</p>
+              <p className="mt-1 text-ink/80">We sent a link to <b>{email}</b>. Open it on this device to come straight in. It can take a minute; check spam too.</p>
               <button className="mt-3 min-h-[40px] font-bold underline underline-offset-4" onClick={() => setSent(false)}>Use a different email</button>
             </div>
           ) : (
@@ -100,13 +113,32 @@ export function Login() {
                   <div className="flex items-center gap-3 text-[14px] text-muted"><span className="h-px flex-1 bg-line" />or with your email<span className="h-px flex-1 bg-line" /></div>
                 </>
               )}
-              <p className="font-bold">Sign in with your email</p>
-              <p className="-mt-2 text-[14px] text-muted">We’ll email you a link. No password needed.</p>
-              <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (email.includes('@')) run(async () => { await auth.signInEmail(email.trim()); setSent(true); }); }}>
+              <div role="tablist" aria-label="Sign in or create account" className="inline-flex rounded-full bg-sand p-1">
+                {([['in', 'Sign in'], ['up', 'Create account']] as const).map(([k, l]) => (
+                  <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => { setTab(k); setErr(''); }}
+                    className={`min-h-[44px] rounded-full px-5 text-[15px] font-bold ${tab === k ? 'bg-card shadow-sm' : 'text-muted'}`}>{l}</button>
+                ))}
+              </div>
+              <form className="space-y-3" onSubmit={(e) => {
+                e.preventDefault();
+                const em = email.trim().toLowerCase();
+                if (!em.includes('@')) return;
+                if (password.length < 8) { setErr('Use a password with at least 8 characters.'); return; }
+                run(async () => {
+                  if (tab === 'in') await auth.signInPassword(em, password);
+                  else if (!(await auth.signUpPassword(em, password))) setSent(true);
+                });
+              }}>
                 <label htmlFor="l-email" className="sr-only">Email</label>
                 <input id="l-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@family.com" className={field} />
-                <Btn type="submit" className="w-full" disabled={busy}>{busy ? 'Sending…' : 'Email me a sign-in link'}</Btn>
+                <label htmlFor="l-pass" className="sr-only">Password</label>
+                <input id="l-pass" type="password" autoComplete={tab === 'in' ? 'current-password' : 'new-password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder={tab === 'in' ? 'Password' : 'Choose a password (8+ characters)'} className={field} />
+                <Btn type="submit" className="w-full" disabled={busy}>{busy ? 'One moment…' : tab === 'in' ? 'Sign in' : 'Create account'}</Btn>
               </form>
+              <button type="button" disabled={busy} className="min-h-[40px] text-[14px] font-bold text-muted underline underline-offset-4"
+                onClick={() => { const em = email.trim().toLowerCase(); if (!em.includes('@')) { setErr('Type your email first.'); return; } run(async () => { await auth.signInEmail(em); setSent(true); }); }}>
+                Forgot password? Email me a sign-in link
+              </button>
             </>
           )}
           {err && <p className="text-[15px] text-heart" role="alert">{err}</p>}
