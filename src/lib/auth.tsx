@@ -25,6 +25,8 @@ interface Auth {
   createFamily: (name: string, since: string) => Promise<void>;
   joinFamily: (code: string) => Promise<void>;
   enterPreview: (seed: PreviewSeed, name?: string) => void;
+  /** false = sign out when the browser is closed */
+  setRemember: (on: boolean) => void;
 }
 
 const A = createContext<Auth | null>(null);
@@ -79,6 +81,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     setMediaMode('cloud');
+    // "Remember me" off: the sign-in lasts only while this browser session is open
+    try {
+      if (localStorage.getItem('ourstory-remember') === '0' && !sessionStorage.getItem('ourstory-live')) supabase!.auth.signOut();
+      sessionStorage.setItem('ourstory-live', '1');
+    } catch { /* storage blocked */ }
     const onUser = (u: User | null) => {
       if (!u) { setUser(null); setFamily(null); setCloudContext(null, null); setPhase('signedOut'); return; }
       setUser({ id: u.id, email: u.email, name: nameOf(u) });
@@ -124,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data } = await supabase!.auth.getUser();
       if (data.user) await pickFamily(data.user);
     },
+    setRemember: (on: boolean) => writeLS('ourstory-remember', on ? '1' : '0'),
     enterPreview: (s: PreviewSeed, name?: string) => {
       writeLS(PREVIEW_KEY, s);
       if (name) writeLS('ourstory-name', name);
